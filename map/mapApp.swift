@@ -1,11 +1,5 @@
-//
-//  mapApp.swift
-//  map
-//
-//  Created by 西村 on 2026/01/23.
-//
-
 import SwiftUI
+import SwiftData
 
 @main
 struct mapApp: App {
@@ -13,5 +7,6 @@ struct mapApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [HappinessEntry.self, UserProfile.self])
     }
 }

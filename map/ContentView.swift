@@ -1,21 +1,37 @@
-//
-//  ContentView.swift
-//  map
-//
-//  Created by 西村 on 2026/01/23.
-//
-
 import SwiftUI
+import MapKit
 
 struct ContentView: View {
+    @State private var showInputSheet = false
+    @State private var selectedTab = 1
+    @StateObject private var homeViewModel = HomeViewModel()
+    @StateObject private var treasureBoxViewModel = TreasureBoxViewModel()
+    @StateObject private var profileViewModel = ProfileViewModel()
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView(selection: $selectedTab) {
+            TreasureBoxView(viewModel: treasureBoxViewModel)
+                .tabItem {
+                    Label("宝箱", systemImage: "shippingbox.fill")
+                }
+                .tag(0)
+
+            HomeView(viewModel: homeViewModel, showInputSheet: $showInputSheet)
+                .tabItem {
+                    Label("ホーム", systemImage: "house.fill")
+                }
+                .tag(1)
+
+            ProfileView(viewModel: profileViewModel)
+                .tabItem {
+                    Label("プロフィール", systemImage: "person.fill")
+                }
+                .tag(2)
         }
-        .padding()
+        .tint(Color.appVermillion)
+        .sheet(isPresented: $showInputSheet) {
+            InputView(viewModel: InputViewModel())
+        }
     }
 }
 
