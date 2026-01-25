@@ -5,11 +5,18 @@ struct InputView<ViewModel: InputViewModelProtocol>: View {
     @ObservedObject var viewModel: ViewModel
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @State private var showPraiseCard = false
+    @State private var savedHappinessText = ""
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.appBackground
+                Image("background2")
+                    .resizable()
+                    .scaledToFill()
+                    .ignoresSafeArea()
+
+                Color.white.opacity(0.5)
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -55,6 +62,15 @@ struct InputView<ViewModel: InputViewModelProtocol>: View {
         .task {
             await viewModel.fetchLocation()
         }
+        .overlay {
+            if showPraiseCard {
+                PraiseCardView(happinessText: savedHappinessText) {
+                    dismiss()
+                }
+                .transition(.opacity.combined(with: .scale))
+            }
+        }
+        .animation(.spring(response: 0.4), value: showPraiseCard)
     }
 
     private var topicSection: some View {
@@ -111,8 +127,9 @@ struct InputView<ViewModel: InputViewModelProtocol>: View {
     private var saveButton: some View {
         Button {
             Task {
+                savedHappinessText = viewModel.happinessText
                 await viewModel.saveEntry(context: modelContext)
-                dismiss()
+                showPraiseCard = true
             }
         } label: {
             if viewModel.isSaving {

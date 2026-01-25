@@ -32,7 +32,12 @@ struct HomeView<ViewModel: HomeViewModelProtocol>: View {
 
     var body: some View {
         ZStack {
-            Color.appBackground
+            Image("background2")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+
+            Color.white.opacity(0.5)
                 .ignoresSafeArea()
 
             VStack(spacing: 24) {
@@ -67,9 +72,7 @@ struct HomeView<ViewModel: HomeViewModelProtocol>: View {
                 TopicCardView(topic: viewModel.currentTopic)
                     .padding(.horizontal, 32)
 
-                if viewModel.showInputButton {
-                    inputButton
-                }
+                inputButton
 
                 Spacer()
             }

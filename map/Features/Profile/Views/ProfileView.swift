@@ -8,7 +8,12 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.appBackground
+                Image("background2")
+                    .resizable()
+                    .scaledToFill()
+                    .ignoresSafeArea()
+
+                Color.white.opacity(0.5)
                     .ignoresSafeArea()
 
                 ScrollView {
