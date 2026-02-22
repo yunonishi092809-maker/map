@@ -8,6 +8,14 @@ struct ContentView: View {
     @StateObject private var treasureBoxViewModel = TreasureBoxViewModel()
     @StateObject private var profileViewModel = ProfileViewModel()
 
+    init() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .white
+        UITabBar.appearance().standardAppearance = appearance
+        UITabBar.appearance().scrollEdgeAppearance = appearance
+    }
+
     var body: some View {
         TabView(selection: $selectedTab) {
             TreasureBoxView(viewModel: treasureBoxViewModel)

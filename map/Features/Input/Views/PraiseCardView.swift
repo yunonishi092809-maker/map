@@ -45,7 +45,7 @@ struct PraiseCardView: View {
                 .padding(.top, 8)
             }
             .padding(32)
-            .background(Color.white)
+            .background(Color.appCardBackground)
             .clipShape(RoundedRectangle(cornerRadius: 24))
             .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
             .padding(.horizontal, 32)

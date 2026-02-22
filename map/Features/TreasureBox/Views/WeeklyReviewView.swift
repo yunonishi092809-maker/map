@@ -25,10 +25,11 @@ struct WeeklyReviewView: View {
                 Image("background2")
                     .resizable()
                     .scaledToFill()
-                    .ignoresSafeArea()
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                    .ignoresSafeArea(.all)
 
-                Color.white.opacity(0.5)
-                    .ignoresSafeArea()
+                Color.appBackgroundOverlay
+                    .ignoresSafeArea(.all)
 
                 ScrollView {
                     VStack(spacing: 20) {
@@ -78,7 +79,7 @@ struct WeeklyReviewView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color.white)
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)

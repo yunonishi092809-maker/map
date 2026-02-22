@@ -35,7 +35,7 @@ struct FullScreenMapView: View {
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.appVermillion)
                             .frame(width: 36, height: 36)
-                            .background(Color.white)
+                            .background(Color.appCardBackground)
                             .clipShape(Circle())
                             .shadow(color: Color.black.opacity(0.1), radius: 4, y: 2)
                     }

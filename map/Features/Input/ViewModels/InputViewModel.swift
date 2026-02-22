@@ -9,6 +9,7 @@ protocol InputViewModelProtocol: ObservableObject {
     var positivityLevel: Double { get set }
     var musicTitle: String { get set }
     var musicArtist: String { get set }
+    var selectedMusic: MusicItem? { get set }
     var locationName: String { get set }
     var isLoadingLocation: Bool { get }
     var currentTopic: Topic { get }
@@ -22,6 +23,17 @@ final class InputViewModel: InputViewModelProtocol {
     @Published var positivityLevel: Double = 50
     @Published var musicTitle: String = ""
     @Published var musicArtist: String = ""
+    @Published var selectedMusic: MusicItem? {
+        didSet {
+            if let music = selectedMusic {
+                musicTitle = music.title
+                musicArtist = music.artistName
+            } else {
+                musicTitle = ""
+                musicArtist = ""
+            }
+        }
+    }
     @Published var locationName: String = ""
     @Published var isLoadingLocation: Bool = false
     @Published var currentTopic: Topic
@@ -99,6 +111,7 @@ final class MockInputViewModel: InputViewModelProtocol {
     @Published var positivityLevel: Double = 50
     @Published var musicTitle: String = ""
     @Published var musicArtist: String = ""
+    @Published var selectedMusic: MusicItem?
     @Published var locationName: String = ""
     @Published var isLoadingLocation: Bool = false
     @Published var currentTopic: Topic = Topic.defaultTopics[0]

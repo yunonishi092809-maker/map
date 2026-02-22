@@ -30,15 +30,22 @@ struct HomeView<ViewModel: HomeViewModelProtocol>: View {
         return streak
     }
 
+    private var hasTodayEntry: Bool {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        return entries.contains { calendar.startOfDay(for: $0.date) == today }
+    }
+
     var body: some View {
         ZStack {
             Image("background2")
                 .resizable()
                 .scaledToFill()
-                .ignoresSafeArea()
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                .ignoresSafeArea(.all)
 
-            Color.white.opacity(0.5)
-                .ignoresSafeArea()
+            Color.appBackgroundOverlay
+                .ignoresSafeArea(.all)
 
             VStack(spacing: 24) {
                 // Top bar
@@ -82,18 +89,32 @@ struct HomeView<ViewModel: HomeViewModelProtocol>: View {
         }
     }
 
+    @ViewBuilder
     private var inputButton: some View {
-        Button {
-            showInputSheet = true
-        } label: {
-            Text("入力する")
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundStyle(.white)
-                .frame(width: 200, height: 56)
-                .background(Color.appVermillion)
-                .clipShape(Capsule())
-                .shadow(color: Color.appVermillion.opacity(0.3), radius: 8, y: 4)
+        if hasTodayEntry {
+            VStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(Color.appVermillion)
+
+                Text("今日の幸せを記録しました")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.appTextSecondary)
+            }
+            .padding(.vertical, 8)
+        } else {
+            Button {
+                showInputSheet = true
+            } label: {
+                Text("入力する")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .frame(width: 200, height: 56)
+                    .background(Color.appVermillion)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.appVermillion.opacity(0.3), radius: 8, y: 4)
+            }
         }
     }
 }

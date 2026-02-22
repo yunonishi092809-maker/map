@@ -22,7 +22,7 @@ struct TopicCardView: View {
         }
         .padding(24)
         .frame(maxWidth: .infinity)
-        .background(Color.white)
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 24))
         .overlay(
             RoundedRectangle(cornerRadius: 24)

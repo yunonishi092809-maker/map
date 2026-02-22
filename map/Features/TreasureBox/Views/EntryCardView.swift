@@ -25,7 +25,6 @@ struct EntryCardView: View {
             Text(entry.happinessText)
                 .font(.body)
                 .foregroundStyle(Color.appTextPrimary)
-                .lineLimit(3)
 
             if let locationName = entry.locationName, !locationName.isEmpty {
                 HStack(spacing: 6) {
@@ -51,9 +50,11 @@ struct EntryCardView: View {
                     }
                 }
             }
+            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding()
-        .background(Color.white)
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)

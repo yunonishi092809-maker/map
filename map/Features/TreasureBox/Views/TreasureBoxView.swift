@@ -6,10 +6,17 @@ struct TreasureBoxView<ViewModel: TreasureBoxViewModelProtocol>: View {
     @ObservedObject var viewModel: ViewModel
     @Query(sort: \HappinessEntry.date, order: .reverse) private var entries: [HappinessEntry]
     @State private var tapCount = 0
+    @State private var isUnlocking = false
+    @State private var keyRotation: Double = 0
     @State private var currentLocation: CLLocationCoordinate2D?
     @State private var showWeeklyReview = false
+    @State private var currentIndex = 0
+    @State private var isMusicPlaying = false
+    @State private var currentLyrics: String?
+    @State private var isLoadingLyrics = false
 
     private let locationService = LocationService.shared
+    private let musicService = MusicService.shared
 
     private var isSunday: Bool {
         Calendar.current.component(.weekday, from: Date()) == 1
@@ -69,10 +76,11 @@ struct TreasureBoxView<ViewModel: TreasureBoxViewModelProtocol>: View {
                 Image("background2")
                     .resizable()
                     .scaledToFill()
-                    .ignoresSafeArea()
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                    .ignoresSafeArea(.all)
 
-                Color.white.opacity(0.5)
-                    .ignoresSafeArea()
+                Color.appBackgroundOverlay
+                    .ignoresSafeArea(.all)
 
                 VStack(spacing: 20) {
                     WeeklyStampView(
@@ -86,16 +94,19 @@ struct TreasureBoxView<ViewModel: TreasureBoxViewModelProtocol>: View {
                         weeklyReviewButton
                     }
 
-                    if viewModel.isBoxOpen {
-                        entriesList
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    } else {
-                        closedBoxView
-                    }
+                    closedBoxView
+                }
+
+                if viewModel.isBoxOpen {
+                    Color.appBackground
+                        .ignoresSafeArea()
+
+                    entriesList
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .navigationTitle("宝箱")
-            .navigationBarTitleDisplayMode(.inline)
+            .animation(.spring(response: 0.4), value: viewModel.isBoxOpen)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showWeeklyReview) {
                 WeeklyReviewView(entries: thisWeekEntries)
             }
@@ -129,14 +140,34 @@ struct TreasureBoxView<ViewModel: TreasureBoxViewModelProtocol>: View {
 
             treasureBoxIcon
                 .onTapGesture {
+                    guard !isUnlocking else { return }
                     tapCount += 1
+
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        keyRotation = -15
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            keyRotation = 15
+                        }
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        withAnimation(.easeInOut(duration: 0.1)) {
+                            keyRotation = 0
+                        }
+                    }
+
                     if tapCount >= 3 {
-                        viewModel.openBox()
-                        tapCount = 0
+                        isUnlocking = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            viewModel.openBox()
+                            tapCount = 0
+                            isUnlocking = false
+                        }
                     }
                 }
 
-            Text("3回タップして開ける")
+            Text(isUnlocking ? "開錠中..." : "3回タップして開ける")
                 .font(.headline)
                 .foregroundStyle(Color.appVermillion)
 
@@ -150,35 +181,35 @@ struct TreasureBoxView<ViewModel: TreasureBoxViewModelProtocol>: View {
 
     private var treasureBoxIcon: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .frame(width: 140, height: 90)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.appVermillion, lineWidth: 3)
-                )
-                .shadow(color: Color.appVermillion.opacity(0.2), radius: 12, y: 6)
+            Image("treasureBox")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 220, height: 220)
+                .saturation(0.8)
+                .brightness(-0.05)
 
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.white)
-                .frame(width: 150, height: 25)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.appVermillion, lineWidth: 3)
-                )
-                .offset(y: -55)
-
-            Image(systemName: "heart.fill")
-                .font(.title2)
+            Image(systemName: isUnlocking ? "lock.open.fill" : "lock.fill")
+                .font(.title)
                 .foregroundStyle(Color.appVermillion)
+                .rotationEffect(.degrees(keyRotation))
+                .scaleEffect(isUnlocking ? 1.3 : 1.0)
+                .animation(.spring(response: 0.3), value: isUnlocking)
+                .offset(y: 80)
         }
-        .scaleEffect(tapCount > 0 ? 1.05 : 1.0)
+        .scaleEffect(tapCount > 0 && !isUnlocking ? 1.05 : 1.0)
         .animation(.spring(response: 0.3), value: tapCount)
     }
 
+    private var currentEntry: HappinessEntry? {
+        guard !nearbyEntries.isEmpty, currentIndex < nearbyEntries.count else { return nil }
+        return nearbyEntries[currentIndex]
+    }
+
     private var entriesList: some View {
-        VStack {
+        VStack(spacing: 0) {
             Button {
+                stopMusic()
+                currentLyrics = nil
                 viewModel.closeBox()
             } label: {
                 HStack {
@@ -189,19 +220,178 @@ struct TreasureBoxView<ViewModel: TreasureBoxViewModelProtocol>: View {
                 .foregroundStyle(Color.appVermillion)
             }
             .padding(.top)
+            .padding(.bottom, 8)
 
             if nearbyEntries.isEmpty {
                 emptyState
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 16) {
-                        ForEach(nearbyEntries) { entry in
-                            EntryCardView(entry: entry)
-                        }
+                    VStack(spacing: 16) {
+                        EntryCardView(entry: nearbyEntries[currentIndex])
+                            .aspectRatio(1, contentMode: .fit)
+                            .padding(.horizontal)
+                            .id(currentIndex)
+                            .transition(.asymmetric(
+                                insertion: .opacity,
+                                removal: .opacity
+                            ))
+
+                        playerControls
+
+                        lyricsSection
                     }
-                    .padding()
+                    .padding(.bottom, 24)
                 }
             }
+        }
+        .task(id: currentIndex) {
+            await loadLyrics()
+        }
+    }
+
+    private var lyricsSection: some View {
+        Group {
+            if let lyrics = currentLyrics {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Image(systemName: "quote.opening")
+                            .foregroundStyle(Color.appVermillion)
+                        Text("歌詞")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.appVermillion)
+                    }
+
+                    Text(lyrics)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.appTextPrimary)
+                        .lineSpacing(6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding()
+                .background(Color.appCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.appVermillionLight, lineWidth: 1)
+                )
+                .padding(.horizontal)
+            } else if isLoadingLyrics {
+                ProgressView()
+                    .tint(Color.appVermillion)
+                    .padding()
+            }
+        }
+    }
+
+    private func loadLyrics() async {
+        guard let entry = currentEntry, let title = entry.musicTitle else {
+            currentLyrics = nil
+            return
+        }
+        isLoadingLyrics = true
+        let artist = entry.musicArtist ?? ""
+        currentLyrics = await musicService.fetchLyrics(title: title, artist: artist)
+        isLoadingLyrics = false
+    }
+
+    private var playerControls: some View {
+        VStack(spacing: 16) {
+            if let entry = currentEntry, let title = entry.musicTitle {
+                HStack(spacing: 6) {
+                    Image(systemName: "music.note")
+                        .foregroundStyle(.white)
+                    Text(title)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                    if let artist = entry.musicArtist {
+                        Text("- \(artist)")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+                .lineLimit(1)
+            }
+
+            HStack(spacing: 40) {
+                Button {
+                    goToPrevious()
+                } label: {
+                    Image(systemName: "backward.fill")
+                        .font(.title2)
+                        .foregroundStyle(currentIndex > 0 ? .white : .white.opacity(0.3))
+                }
+                .disabled(currentIndex <= 0)
+
+                Button {
+                    toggleMusic()
+                } label: {
+                    Image(systemName: isMusicPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 56))
+                        .foregroundStyle(hasMusicForCurrentEntry ? .white : .white.opacity(0.3))
+                }
+                .disabled(!hasMusicForCurrentEntry)
+
+                Button {
+                    goToNext()
+                } label: {
+                    Image(systemName: "forward.fill")
+                        .font(.title2)
+                        .foregroundStyle(currentIndex < nearbyEntries.count - 1 ? .white : .white.opacity(0.3))
+                }
+                .disabled(currentIndex >= nearbyEntries.count - 1)
+            }
+
+            Text("\(currentIndex + 1) / \(nearbyEntries.count)")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.7))
+        }
+        .padding(.vertical, 20)
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity)
+        .background(Color.appVermillion)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .padding(.horizontal)
+    }
+
+    private var hasMusicForCurrentEntry: Bool {
+        currentEntry?.musicTitle != nil
+    }
+
+    private func goToPrevious() {
+        guard currentIndex > 0 else { return }
+        stopMusic()
+        withAnimation(.easeInOut(duration: 0.2)) {
+            currentIndex -= 1
+        }
+    }
+
+    private func goToNext() {
+        guard currentIndex < nearbyEntries.count - 1 else { return }
+        stopMusic()
+        withAnimation(.easeInOut(duration: 0.2)) {
+            currentIndex += 1
+        }
+    }
+
+    private func toggleMusic() {
+        if isMusicPlaying {
+            musicService.pause()
+            isMusicPlaying = false
+        } else if let entry = currentEntry, let title = entry.musicTitle {
+            let artist = entry.musicArtist ?? ""
+            Task {
+                await musicService.playSong(title: title, artist: artist)
+                isMusicPlaying = true
+            }
+        }
+    }
+
+    private func stopMusic() {
+        if isMusicPlaying {
+            musicService.pause()
+            isMusicPlaying = false
         }
     }
 

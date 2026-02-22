@@ -21,7 +21,7 @@ struct CalendarView: View {
             daysGrid
         }
         .padding()
-        .background(Color.white)
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)

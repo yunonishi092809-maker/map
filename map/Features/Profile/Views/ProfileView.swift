@@ -3,7 +3,9 @@ import SwiftData
 
 struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
     @ObservedObject var viewModel: ViewModel
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \HappinessEntry.date, order: .reverse) private var entries: [HappinessEntry]
+    @State private var showEditSheet = false
 
     var body: some View {
         NavigationStack {
@@ -11,93 +13,122 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
                 Image("background2")
                     .resizable()
                     .scaledToFill()
-                    .ignoresSafeArea()
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                    .ignoresSafeArea(.all)
 
-                Color.white.opacity(0.5)
-                    .ignoresSafeArea()
+                Color.appBackgroundOverlay
+                    .ignoresSafeArea(.all)
 
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 12) {
                         profileHeader
-
-                        streakCard
 
                         CalendarView(entryDates: viewModel.getEntryDates(entries: entries))
                             .padding(.horizontal)
 
                         statsSection
                     }
-                    .padding(.vertical)
+                    .padding(.vertical, 8)
                 }
             }
-            .navigationTitle("プロフィール")
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showEditSheet) {
+                ProfileEditView(viewModel: viewModel)
+            }
+            .task {
+                viewModel.loadProfile(context: modelContext)
+            }
         }
     }
 
     private var profileHeader: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "person.circle.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(Color.appVermillion)
+        VStack(spacing: 10) {
+            profileIcon
+                .overlay(alignment: .bottomTrailing) {
+                    pencilBadge
+                }
+                .onTapGesture {
+                    showEditSheet = true
+                }
 
-            Text(viewModel.userName)
-                .font(.title2)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.appTextPrimary)
-        }
-        .padding(.top)
-    }
-
-    private var streakCard: some View {
-        HStack(spacing: 16) {
-            Image(systemName: "flame.fill")
-                .font(.title)
-                .foregroundStyle(Color.appVermillion)
-
-            VStack(alignment: .leading) {
-                Text("継続日数")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.appTextSecondary)
-
-                Text("\(viewModel.calculateStreak(entries: entries))日")
+            HStack(spacing: 6) {
+                Text(viewModel.userName)
                     .font(.title)
                     .fontWeight(.bold)
-                    .foregroundStyle(Color.appVermillion)
+                    .foregroundStyle(Color.appTextPrimary)
+
+                Image(systemName: "pencil")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.appTextSecondary)
+            }
+            .onTapGesture {
+                showEditSheet = true
             }
 
-            Spacer()
+            streakBadge
         }
-        .padding()
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.appVermillionLight, lineWidth: 1)
-        )
-        .padding(.horizontal)
+        .padding(.top, 24)
+    }
+
+    private var streakBadge: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "flame.fill")
+                .font(.title3)
+                .foregroundStyle(Color.appVermillion)
+
+            Text("\(viewModel.calculateStreak(entries: entries))日")
+                .font(.title3)
+                .fontWeight(.bold)
+                .foregroundStyle(Color.appVermillion)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 8)
+        .background(Color.appVermillion.opacity(0.12))
+        .clipShape(Capsule())
+    }
+
+    private var pencilBadge: some View {
+        Circle()
+            .fill(Color.appCardBackground)
+            .frame(width: 30, height: 30)
+            .overlay(
+                Image(systemName: "pencil")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.appVermillion)
+            )
+            .shadow(color: .black.opacity(0.15), radius: 2, y: 1)
+    }
+
+    @ViewBuilder
+    private var profileIcon: some View {
+        if let data = viewModel.iconImageData,
+           let uiImage = UIImage(data: data) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 120, height: 120)
+                .clipShape(Circle())
+        } else {
+            Image(systemName: "person.circle.fill")
+                .font(.system(size: 120))
+                .foregroundStyle(Color.appVermillion)
+        }
     }
 
     private var statsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("統計")
-                .font(.headline)
-                .foregroundStyle(Color.appTextPrimary)
-                .padding(.horizontal)
-
-            HStack(spacing: 16) {
-                statCard(title: "記録数", value: "\(entries.count)", icon: "heart.fill", color: Color.appVermillion)
-                statCard(title: "平均ポジ度", value: averagePositivity, icon: "face.smiling.fill", color: Color.appGold)
-            }
-            .padding(.horizontal)
+        HStack(spacing: 12) {
+            statCard(title: "記録数", value: "\(entries.count)", icon: "heart.fill", color: Color.appVermillion)
+            statCard(title: "平均ポジ度", value: averagePositivity, icon: "sparkles", color: Color.appVermillion)
         }
+        .padding(.horizontal)
     }
 
     private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
         VStack(spacing: 8) {
             Image(systemName: icon)
                 .font(.title2)
-                .foregroundStyle(color)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(color, .white)
 
             Text(value)
                 .font(.title2)
@@ -110,7 +141,7 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color.white)
+        .background(Color.appCardBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
@@ -127,4 +158,5 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
 
 #Preview {
     ProfileView(viewModel: MockProfileViewModel())
+        .modelContainer(for: [UserProfile.self, HappinessEntry.self], inMemory: true)
 }
