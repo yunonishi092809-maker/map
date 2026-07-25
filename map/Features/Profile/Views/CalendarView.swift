@@ -7,8 +7,8 @@ struct CalendarView: View {
     private let calendar = Calendar.current
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ja_JP")
-        formatter.dateFormat = "yyyy年M月"
+        formatter.locale = Locale(identifier: "en_US")
+        formatter.dateFormat = "MMMM yyyy"
         return formatter
     }()
 
@@ -19,14 +19,10 @@ struct CalendarView: View {
             weekdayHeader
 
             daysGrid
+                .frame(maxHeight: .infinity)
         }
         .padding()
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.appVermillionLight, lineWidth: 1)
-        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var monthHeader: some View {
@@ -35,13 +31,14 @@ struct CalendarView: View {
                 moveMonth(by: -1)
             } label: {
                 Image(systemName: "chevron.left")
+                    .font(.title2)
                     .foregroundStyle(Color.appVermillion)
             }
 
             Spacer()
 
             Text(dateFormatter.string(from: displayedMonth))
-                .font(.headline)
+                .font(.squadaOne(30))
                 .foregroundStyle(Color.appTextPrimary)
 
             Spacer()
@@ -50,6 +47,7 @@ struct CalendarView: View {
                 moveMonth(by: 1)
             } label: {
                 Image(systemName: "chevron.right")
+                    .font(.title2)
                     .foregroundStyle(Color.appVermillion)
             }
         }
@@ -59,7 +57,7 @@ struct CalendarView: View {
         HStack {
             ForEach(["日", "月", "火", "水", "木", "金", "土"], id: \.self) { day in
                 Text(day)
-                    .font(.caption)
+                    .font(.zenMaru(17, weight: .bold))
                     .foregroundStyle(Color.appTextSecondary)
                     .frame(maxWidth: .infinity)
             }
@@ -67,15 +65,20 @@ struct CalendarView: View {
     }
 
     private var daysGrid: some View {
-        let days = generateDaysInMonth()
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
-            ForEach(days, id: \.self) { date in
-                if let date = date {
-                    dayCell(for: date)
-                } else {
-                    Text("")
-                        .frame(height: 32)
+        let weeks = generateWeeks()
+        return VStack(spacing: 6) {
+            ForEach(weeks.indices, id: \.self) { weekIndex in
+                HStack(spacing: 6) {
+                    ForEach(0..<7, id: \.self) { dayIndex in
+                        if let date = weeks[weekIndex][dayIndex] {
+                            dayCell(for: date)
+                        } else {
+                            Color.clear
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        }
+                    }
                 }
+                .frame(maxHeight: .infinity)
             }
         }
     }
@@ -85,18 +88,20 @@ struct CalendarView: View {
         let hasEntry = entryDates.contains(calendar.startOfDay(for: date))
         let isToday = calendar.isDateInToday(date)
 
-        return Text("\(day)")
-            .font(.subheadline)
-            .frame(width: 32, height: 32)
-            .background(
-                Circle()
-                    .fill(hasEntry ? Color.appVermillion : Color.clear)
-            )
-            .foregroundStyle(hasEntry ? .white : (isToday ? Color.appVermillion : Color.appTextPrimary))
-            .overlay(
-                Circle()
-                    .stroke(isToday ? Color.appVermillion : Color.clear, lineWidth: 2)
-            )
+        return ZStack {
+            Circle()
+                .fill(hasEntry ? Color.appVermillion : Color.clear)
+                .overlay(
+                    Circle()
+                        .stroke(isToday ? Color.appVermillion : Color.clear, lineWidth: 2)
+                )
+                .aspectRatio(1, contentMode: .fit)
+
+            Text("\(day)")
+                .font(.zenMaru(22, weight: .bold))
+                .foregroundStyle(hasEntry ? .white : (isToday ? Color.appVermillion : Color.appTextPrimary))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func moveMonth(by value: Int) {
@@ -107,7 +112,7 @@ struct CalendarView: View {
 
     private func generateDaysInMonth() -> [Date?] {
         guard let monthInterval = calendar.dateInterval(of: .month, for: displayedMonth),
-              let firstWeek = calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start) else {
+              calendar.dateInterval(of: .weekOfMonth, for: monthInterval.start) != nil else {
             return []
         }
 
@@ -126,6 +131,16 @@ struct CalendarView: View {
         }
 
         return days
+    }
+
+    private func generateWeeks() -> [[Date?]] {
+        var days = generateDaysInMonth()
+        while days.count % 7 != 0 {
+            days.append(nil)
+        }
+        return stride(from: 0, to: days.count, by: 7).map {
+            Array(days[$0..<$0 + 7])
+        }
     }
 }
 

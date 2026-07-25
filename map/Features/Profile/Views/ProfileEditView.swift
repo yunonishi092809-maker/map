@@ -66,7 +66,7 @@ struct ProfileEditView<ViewModel: ProfileViewModelProtocol>: View {
             }
 
             Text("写真を変更")
-                .font(.caption)
+                .font(.appCaption)
                 .foregroundStyle(Color.appTextSecondary)
         }
         .padding(.top, 16)
@@ -89,12 +89,12 @@ struct ProfileEditView<ViewModel: ProfileViewModelProtocol>: View {
     private var nameSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("名前")
-                .font(.subheadline)
+                .font(.appSubheadline)
                 .foregroundStyle(Color.appTextSecondary)
 
             TextField("名前を入力", text: $editingName)
                 .textFieldStyle(.roundedBorder)
-                .font(.body)
+                .font(.appBody)
         }
     }
 

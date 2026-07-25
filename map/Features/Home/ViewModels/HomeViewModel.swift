@@ -1,38 +1,36 @@
 import Foundation
 import SwiftUI
 import Combine
+import CoreLocation
 
 protocol HomeViewModelProtocol: ObservableObject {
-    var currentTopic: Topic { get }
     var timeMode: TimeMode { get }
-    var showInputButton: Bool { get }
+    var shouldFocusOnKeys: Bool { get set }
+    var focusCoordinate: CLLocationCoordinate2D? { get set }
     func refreshTimeMode()
 }
 
 final class HomeViewModel: HomeViewModelProtocol {
-    @Published var currentTopic: Topic
     @Published var timeMode: TimeMode
-    @Published var showInputButton: Bool
+    @Published var shouldFocusOnKeys: Bool = false
+    @Published var focusCoordinate: CLLocationCoordinate2D?
 
     private let timeService: TimeServiceProtocol
 
     init(timeService: TimeServiceProtocol = TimeService.shared) {
         self.timeService = timeService
-        self.currentTopic = Topic.todaysTopic()
         self.timeMode = timeService.currentMode()
-        self.showInputButton = timeService.isEveningMode()
     }
 
     func refreshTimeMode() {
         timeMode = timeService.currentMode()
-        showInputButton = timeService.isEveningMode()
     }
 }
 
 final class MockHomeViewModel: HomeViewModelProtocol {
-    @Published var currentTopic: Topic = Topic.defaultTopics[0]
     @Published var timeMode: TimeMode = .morning
-    @Published var showInputButton: Bool = false
+    @Published var shouldFocusOnKeys: Bool = false
+    @Published var focusCoordinate: CLLocationCoordinate2D?
 
     func refreshTimeMode() {}
 }

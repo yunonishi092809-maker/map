@@ -22,13 +22,7 @@ struct WeeklyReviewView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Image("background2")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                    .ignoresSafeArea(.all)
-
-                Color.appBackgroundOverlay
+                Color.appPageBackground
                     .ignoresSafeArea(.all)
 
                 ScrollView {
@@ -50,8 +44,10 @@ struct WeeklyReviewView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Text("Close").font(.squadaOne(17))
                     }
                     .foregroundStyle(Color.appVermillion)
                 }
@@ -62,20 +58,12 @@ struct WeeklyReviewView: View {
     private var headerSection: some View {
         VStack(spacing: 12) {
             Text(weekDateRange)
-                .font(.title3)
-                .fontWeight(.semibold)
+                .font(.appTitle3)
                 .foregroundStyle(Color.appVermillion)
 
             Text("\(entries.count)個の幸せを見つけました！")
-                .font(.headline)
+                .font(.appHeadline)
                 .foregroundStyle(Color.appTextPrimary)
-
-            if !entries.isEmpty {
-                let avgPositivity = entries.reduce(0.0) { $0 + $1.positivityLevel } / Double(entries.count)
-                Text("平均ポジティブ度: \(Int(avgPositivity))%")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.appTextSecondary)
-            }
         }
         .padding()
         .frame(maxWidth: .infinity)
@@ -94,11 +82,11 @@ struct WeeklyReviewView: View {
                 .foregroundStyle(Color.appVermillionLight)
 
             Text("今週はまだ記録がありません")
-                .font(.headline)
+                .font(.appHeadline)
                 .foregroundStyle(Color.appTextSecondary)
 
             Text("幸せを見つけて記録してみよう！")
-                .font(.subheadline)
+                .font(.appSubheadline)
                 .foregroundStyle(Color.appTextSecondary)
         }
         .padding(.top, 60)

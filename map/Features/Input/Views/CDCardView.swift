@@ -59,13 +59,12 @@ struct CDCardView: View {
             }
 
             Text(music.title)
-                .font(.caption)
-                .fontWeight(.semibold)
+                .font(.zenMaru(12, weight: .medium))
                 .foregroundStyle(Color.appTextPrimary)
                 .lineLimit(1)
 
             Text(music.artistName)
-                .font(.caption2)
+                .font(.appCaption2)
                 .foregroundStyle(Color.appTextSecondary)
                 .lineLimit(1)
         }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PraiseCardView: View {
+    let emotionIconId: String
     let happinessText: String
     let onDismiss: () -> Void
 
@@ -16,40 +17,59 @@ struct PraiseCardView: View {
                     onDismiss()
                 }
 
-            VStack(spacing: 24) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 50))
-                    .foregroundStyle(Color.appGold)
+            VStack(spacing: 0) {
+                Image(emotionIconId)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 180, height: 180)
+                    .offset(y: 60)
+                    .zIndex(1)
 
-                Text("すごい！")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color.appVermillion)
+                VStack(spacing: 20) {
+                    speechBubble
 
-                Text(praiseMessage)
-                    .font(.body)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(Color.appTextPrimary)
-                    .padding(.horizontal)
-
-                Button {
-                    onDismiss()
-                } label: {
-                    Text("ありがとう")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(width: 160, height: 48)
-                        .background(Color.appVermillion)
-                        .clipShape(Capsule())
+                    Button {
+                        onDismiss()
+                    } label: {
+                        Text("Thanks!")
+                            .font(.squadaOne(17))
+                            .foregroundStyle(.white)
+                            .frame(width: 160, height: 48)
+                            .background(Color.appVermillion)
+                            .clipShape(Capsule())
+                    }
                 }
-                .padding(.top, 8)
+                .padding(.horizontal, 28)
+                .padding(.top, 68)
+                .padding(.bottom, 28)
+                .background(Color.appCardBackground)
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
             }
-            .padding(32)
-            .background(Color.appCardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
-            .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
             .padding(.horizontal, 32)
         }
+    }
+
+    private var speechBubble: some View {
+        VStack(spacing: 12) {
+            Text("すごい！")
+                .font(.appTitle)
+                .foregroundStyle(Color.appVermillion)
+
+            Text(praiseMessage)
+                .font(.appBody)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Color.appTextPrimary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity)
+        .background(Color.appPageBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.appVermillionLight, lineWidth: 1)
+        )
     }
 }
 
@@ -90,7 +110,7 @@ struct PraiseGenerator {
 }
 
 #Preview {
-    PraiseCardView(happinessText: "友達と楽しく話せた") {
+    PraiseCardView(emotionIconId: "emotion_1", happinessText: "友達と楽しく話せた") {
         print("Dismissed")
     }
 }

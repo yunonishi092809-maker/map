@@ -9,7 +9,7 @@ struct MusicPickerView<ViewModel: InputViewModelProtocol>: View {
     var body: some View {
         VStack(spacing: 8) {
             Text("今日の1曲")
-                .font(.headline)
+                .font(.appHeadline)
                 .foregroundStyle(Color.appVermillion)
 
             if let music = viewModel.selectedMusic {
@@ -42,7 +42,7 @@ struct MusicPickerView<ViewModel: InputViewModelProtocol>: View {
                 showSearchSheet = true
             } label: {
                 Text("変更")
-                    .font(.caption2)
+                    .font(.appCaption2)
                     .foregroundStyle(Color.appVermillion)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)
@@ -65,7 +65,7 @@ struct MusicPickerView<ViewModel: InputViewModelProtocol>: View {
                     .foregroundStyle(Color.appVermillionLight)
 
                 Text("曲を選ぶ")
-                    .font(.caption)
+                    .font(.appCaption)
                     .foregroundStyle(Color.appTextSecondary)
             }
             .frame(maxWidth: .infinity, maxHeight: compact ? .infinity : nil)
@@ -113,7 +113,7 @@ private struct MusicSearchSheet: View {
                                 .font(.system(size: 40))
                                 .foregroundStyle(Color.appVermillionLight)
                             Text("曲名やアーティスト名で検索")
-                                .font(.subheadline)
+                                .font(.appSubheadline)
                                 .foregroundStyle(Color.appTextSecondary)
                         }
                         Spacer()
@@ -127,7 +127,7 @@ private struct MusicSearchSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") { dismiss() }
+                    Button { dismiss() } label: { Text("Close").font(.squadaOne(17)) }
                         .foregroundStyle(Color.appVermillion)
                 }
             }
@@ -146,12 +146,12 @@ private struct MusicSearchSheet: View {
                 .foregroundStyle(Color.appVermillionLight)
 
             Text("Apple Musicへのアクセスが\n許可されていません")
-                .font(.headline)
+                .font(.appHeadline)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(Color.appTextPrimary)
 
             Text("設定アプリから許可してください")
-                .font(.subheadline)
+                .font(.appSubheadline)
                 .foregroundStyle(Color.appTextSecondary)
 
             Button {
@@ -160,8 +160,7 @@ private struct MusicSearchSheet: View {
                 }
             } label: {
                 Text("設定を開く")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                    .font(.zenMaru(15, weight: .medium))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)

@@ -4,26 +4,21 @@ import SwiftData
 struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
     @ObservedObject var viewModel: ViewModel
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Query(sort: \HappinessEntry.date, order: .reverse) private var entries: [HappinessEntry]
     @State private var showEditSheet = false
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Image("background2")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-                    .ignoresSafeArea(.all)
-
-                Color.appBackgroundOverlay
+                Color.appPageBackground
                     .ignoresSafeArea(.all)
 
                 ScrollView {
                     VStack(spacing: 12) {
                         profileHeader
 
-                        CalendarView(entryDates: viewModel.getEntryDates(entries: entries))
+                        WeeklyStampView(stamps: weeklyStamps)
                             .padding(.horizontal)
 
                         statsSection
@@ -31,7 +26,14 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
                     .padding(.vertical, 8)
                 }
             }
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationTitle("プロフィール")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { dismiss() } label: { Text("Close").font(.squadaOne(17)) }
+                        .foregroundStyle(Color.appVermillion)
+                }
+            }
             .sheet(isPresented: $showEditSheet) {
                 ProfileEditView(viewModel: viewModel)
             }
@@ -53,8 +55,7 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
 
             HStack(spacing: 6) {
                 Text(viewModel.userName)
-                    .font(.title)
-                    .fontWeight(.bold)
+                    .font(.appTitle)
                     .foregroundStyle(Color.appTextPrimary)
 
                 Image(systemName: "pencil")
@@ -77,8 +78,7 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
                 .foregroundStyle(Color.appVermillion)
 
             Text("\(viewModel.calculateStreak(entries: entries))日")
-                .font(.title3)
-                .fontWeight(.bold)
+                .font(.zenMaru(20, weight: .bold))
                 .foregroundStyle(Color.appVermillion)
         }
         .padding(.horizontal, 18)
@@ -115,10 +115,24 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
         }
     }
 
+    private var weeklyStamps: [Bool] {
+        let calendar = Calendar.current
+        let now = Date()
+        guard let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) else {
+            return Array(repeating: false, count: 7)
+        }
+        let dates = Set(entries.map { calendar.startOfDay(for: $0.date) })
+        return (0..<7).map { dayOffset in
+            guard let date = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else {
+                return false
+            }
+            return dates.contains(calendar.startOfDay(for: date))
+        }
+    }
+
     private var statsSection: some View {
         HStack(spacing: 12) {
             statCard(title: "記録数", value: "\(entries.count)", icon: "heart.fill", color: Color.appVermillion)
-            statCard(title: "平均ポジ度", value: averagePositivity, icon: "sparkles", color: Color.appVermillion)
         }
         .padding(.horizontal)
     }
@@ -131,12 +145,11 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
                 .foregroundStyle(color, .white)
 
             Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.appTitle2)
                 .foregroundStyle(Color.appTextPrimary)
 
             Text(title)
-                .font(.caption)
+                .font(.appCaption)
                 .foregroundStyle(Color.appTextSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -147,12 +160,6 @@ struct ProfileView<ViewModel: ProfileViewModelProtocol>: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.appVermillionLight, lineWidth: 1)
         )
-    }
-
-    private var averagePositivity: String {
-        guard !entries.isEmpty else { return "0%" }
-        let average = entries.reduce(0.0) { $0 + $1.positivityLevel } / Double(entries.count)
-        return "\(Int(average))%"
     }
 }
 

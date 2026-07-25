@@ -7,6 +7,9 @@ protocol DataServiceProtocol {
     func deleteEntry(_ entry: HappinessEntry, context: ModelContext)
     func fetchProfile(context: ModelContext) -> UserProfile?
     func saveProfile(_ profile: UserProfile, context: ModelContext)
+    func fetchKeys(context: ModelContext) -> [Key]
+    func saveKey(_ key: Key, context: ModelContext)
+    func fetchCollectedKeyCount(context: ModelContext) -> Int
 }
 
 final class DataService: DataServiceProtocol {
@@ -40,11 +43,31 @@ final class DataService: DataServiceProtocol {
         context.insert(profile)
         try? context.save()
     }
+
+    func fetchKeys(context: ModelContext) -> [Key] {
+        let descriptor = FetchDescriptor<Key>(
+            sortBy: [SortDescriptor(\.collectedDate, order: .reverse)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    func saveKey(_ key: Key, context: ModelContext) {
+        context.insert(key)
+        try? context.save()
+    }
+
+    func fetchCollectedKeyCount(context: ModelContext) -> Int {
+        let descriptor = FetchDescriptor<Key>(
+            predicate: #Predicate { $0.isCollected }
+        )
+        return (try? context.fetchCount(descriptor)) ?? 0
+    }
 }
 
 final class MockDataService: DataServiceProtocol {
     var mockEntries: [HappinessEntry] = []
     var mockProfile: UserProfile?
+    var mockKeys: [Key] = []
 
     func fetchEntries(context: ModelContext) -> [HappinessEntry] {
         mockEntries
@@ -64,5 +87,17 @@ final class MockDataService: DataServiceProtocol {
 
     func saveProfile(_ profile: UserProfile, context: ModelContext) {
         mockProfile = profile
+    }
+
+    func fetchKeys(context: ModelContext) -> [Key] {
+        mockKeys
+    }
+
+    func saveKey(_ key: Key, context: ModelContext) {
+        mockKeys.append(key)
+    }
+
+    func fetchCollectedKeyCount(context: ModelContext) -> Int {
+        mockKeys.filter { $0.isCollected }.count
     }
 }

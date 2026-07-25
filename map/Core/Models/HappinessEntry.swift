@@ -5,36 +5,54 @@ import SwiftData
 final class HappinessEntry {
     var id: UUID
     var date: Date
-    var topicId: String
+    var emotionIconId: String
     var happinessText: String
-    var positivityLevel: Double
     var musicTitle: String?
     var musicArtist: String?
     var locationName: String?
     var latitude: Double?
     var longitude: Double?
+    @Attribute(.externalStorage) var photoData: [Data]
+    var collageTemplateId: String?
+    var stampsData: Data?
 
     init(
         id: UUID = UUID(),
         date: Date = Date(),
-        topicId: String,
+        emotionIconId: String,
         happinessText: String,
-        positivityLevel: Double,
         musicTitle: String? = nil,
         musicArtist: String? = nil,
         locationName: String? = nil,
         latitude: Double? = nil,
-        longitude: Double? = nil
+        longitude: Double? = nil,
+        photoData: [Data] = [],
+        collageTemplateId: String? = nil,
+        stampsData: Data? = nil
     ) {
         self.id = id
         self.date = date
-        self.topicId = topicId
+        self.emotionIconId = emotionIconId
         self.happinessText = happinessText
-        self.positivityLevel = positivityLevel
         self.musicTitle = musicTitle
         self.musicArtist = musicArtist
         self.locationName = locationName
         self.latitude = latitude
         self.longitude = longitude
+        self.photoData = photoData
+        self.collageTemplateId = collageTemplateId
+        self.stampsData = stampsData
+    }
+}
+
+extension HappinessEntry {
+    var stamps: [StampData] {
+        get {
+            guard let stampsData else { return [] }
+            return (try? JSONDecoder().decode([StampData].self, from: stampsData)) ?? []
+        }
+        set {
+            stampsData = try? JSONEncoder().encode(newValue)
+        }
     }
 }

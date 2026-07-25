@@ -28,11 +28,6 @@ final class TreasureBoxViewModel: TreasureBoxViewModelProtocol {
 final class MockTreasureBoxViewModel: TreasureBoxViewModelProtocol {
     @Published var isBoxOpen: Bool = false
 
-    func openBox() {
-        isBoxOpen = true
-    }
-
-    func closeBox() {
-        isBoxOpen = false
-    }
+    func openBox() { isBoxOpen = true }
+    func closeBox() { isBoxOpen = false }
 }

@@ -19,7 +19,7 @@ struct LocationPickerView: View {
     private var compactLayout: some View {
         VStack(spacing: 8) {
             Text("場所")
-                .font(.headline)
+                .font(.appHeadline)
                 .foregroundStyle(Color.appVermillion)
 
             if locationName.isEmpty {
@@ -61,7 +61,7 @@ struct LocationPickerView: View {
                             .foregroundStyle(Color.appVermillionLight)
                     }
                     Text("現在地")
-                        .font(.caption2)
+                        .font(.appCaption2)
                         .foregroundStyle(Color.appTextSecondary)
                 }
                 .frame(maxWidth: .infinity)
@@ -78,7 +78,7 @@ struct LocationPickerView: View {
                     Image(systemName: "pencil")
                         .font(.system(size: 12))
                     Text("入力")
-                        .font(.caption2)
+                        .font(.appCaption2)
                 }
                 .foregroundStyle(Color.appVermillion)
                 .frame(maxWidth: .infinity)
@@ -99,8 +99,7 @@ struct LocationPickerView: View {
                 .foregroundStyle(Color.appVermillion)
 
             Text(locationName)
-                .font(.caption)
-                .fontWeight(.semibold)
+                .font(.zenMaru(12, weight: .medium))
                 .foregroundStyle(Color.appTextPrimary)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
@@ -109,7 +108,7 @@ struct LocationPickerView: View {
                 showEditSheet = true
             } label: {
                 Text("変更")
-                    .font(.caption2)
+                    .font(.appCaption2)
                     .foregroundStyle(Color.appVermillion)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)
@@ -126,7 +125,7 @@ struct LocationPickerView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("場所")
-                    .font(.headline)
+                    .font(.appHeadline)
                     .foregroundStyle(Color.appVermillion)
 
                 Spacer()
@@ -142,7 +141,7 @@ struct LocationPickerView: View {
                             Image(systemName: "location.fill")
                         }
                         Text("現在地を取得")
-                            .font(.caption)
+                            .font(.appCaption)
                     }
                     .foregroundStyle(Color.appVermillion)
                 }
@@ -221,7 +220,7 @@ private struct LocationEditSheet: View {
                                 }
                                 Text("現在地を取得")
                             }
-                            .font(.subheadline)
+                            .font(.appSubheadline)
                             .foregroundStyle(Color.appVermillion)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 12)
@@ -234,7 +233,7 @@ private struct LocationEditSheet: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             Text("よく使う場所")
-                                .font(.subheadline)
+                                .font(.appSubheadline)
                                 .foregroundStyle(Color.appTextSecondary)
 
                             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
@@ -243,7 +242,7 @@ private struct LocationEditSheet: View {
                                         editingText = suggestion
                                     } label: {
                                         Text(suggestion)
-                                            .font(.subheadline)
+                                            .font(.appSubheadline)
                                             .foregroundStyle(editingText == suggestion ? .white : Color.appTextPrimary)
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 10)
@@ -262,7 +261,7 @@ private struct LocationEditSheet: View {
                     dismiss()
                 } label: {
                     Text("決定")
-                        .font(.headline)
+                        .font(.appHeadline)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
@@ -278,7 +277,7 @@ private struct LocationEditSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") { dismiss() }
+                    Button { dismiss() } label: { Text("Close").font(.squadaOne(17)) }
                         .foregroundStyle(Color.appVermillion)
                 }
             }

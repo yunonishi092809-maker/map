@@ -7,60 +7,36 @@ struct InputView<ViewModel: InputViewModelProtocol>: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showPraiseCard = false
     @State private var savedHappinessText = ""
-    @State private var showQuickPicks = false
-    @FocusState private var isTextEditorFocused: Bool
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Image("background2")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+                Color.appPageBackground
                     .ignoresSafeArea(.all)
 
-                Color.appBackgroundOverlay
-                    .ignoresSafeArea(.all)
+                VStack(spacing: 0) {
+                    stepIndicator
+                        .padding(.top, 8)
 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        topicSection
+                    Spacer(minLength: 0)
 
-                        happinessInputSection
+                    stepContent
 
-                        PositivitySliderView(value: $viewModel.positivityLevel)
-                            .padding(.horizontal)
+                    Spacer(minLength: 0)
 
-                        HStack(spacing: 12) {
-                            MusicPickerView(viewModel: viewModel, compact: true)
-                                .aspectRatio(1, contentMode: .fit)
-
-                            LocationPickerView(
-                                locationName: $viewModel.locationName,
-                                isLoadingLocation: .constant(viewModel.isLoadingLocation),
-                                onRequestCurrentLocation: {
-                                    Task {
-                                        await viewModel.fetchLocation()
-                                    }
-                                },
-                                compact: true
-                            )
-                            .aspectRatio(1, contentMode: .fit)
-                        }
-                        .padding(.horizontal)
-
-                        saveButton
-                            .padding(.top, 8)
+                    if viewModel.currentStep != .edit {
+                        navigationButtons
+                            .padding(.bottom, 16)
                     }
-                    .padding(.vertical)
                 }
             }
-            .navigationTitle("今日の幸せ")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Text("Close")
+                            .font(.squadaOne(17))
                     }
                     .foregroundStyle(Color.appVermillion)
                 }
@@ -71,7 +47,7 @@ struct InputView<ViewModel: InputViewModelProtocol>: View {
         }
         .overlay {
             if showPraiseCard {
-                PraiseCardView(happinessText: savedHappinessText) {
+                PraiseCardView(emotionIconId: viewModel.emotionIconId, happinessText: savedHappinessText) {
                     dismiss()
                 }
                 .transition(.opacity.combined(with: .scale))
@@ -80,120 +56,109 @@ struct InputView<ViewModel: InputViewModelProtocol>: View {
         .animation(.spring(response: 0.4), value: showPraiseCard)
     }
 
-    private var topicSection: some View {
-        VStack(spacing: 8) {
-            Text("今日のお題")
-                .font(.subheadline)
-                .foregroundStyle(Color.appVermillion)
-
-            Text(viewModel.currentTopic.inputQuestion)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.appTextPrimary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
+    private var stepIndicator: some View {
+        HStack(spacing: 8) {
+            ForEach(InputStep.allCases, id: \.rawValue) { step in
+                Capsule()
+                    .fill(step.rawValue <= viewModel.currentStep.rawValue
+                          ? Color.appVermillion
+                          : Color.appVermillionLight.opacity(0.4))
+                    .frame(height: 4)
+            }
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.appVermillionLight, lineWidth: 1)
-        )
-        .padding(.horizontal)
+        .padding(.horizontal, 24)
     }
 
-    private let maxCharacterCount = 100
+    @ViewBuilder
+    private var stepContent: some View {
+        switch viewModel.currentStep {
+        case .emotion:
+            EmotionStepView(selectedEmotionId: $viewModel.emotionIconId)
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
 
-    private var happinessInputSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("今日の幸せ")
-                    .font(.headline)
+        case .detail:
+            DetailStepView(viewModel: viewModel)
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+
+        case .template:
+            TemplateStepView(selectedTemplateId: $viewModel.selectedTemplateId)
+                .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+
+        case .edit:
+            EditStepView(
+                selectedPhotos: $viewModel.selectedPhotos,
+                templateId: viewModel.selectedTemplateId,
+                happinessText: viewModel.happinessText,
+                musicTitle: viewModel.musicTitle,
+                musicArtist: viewModel.musicArtist,
+                locationName: viewModel.locationName,
+                stamps: $viewModel.stamps,
+                isSaving: viewModel.isSaving,
+                onSave: {
+                    Task {
+                        savedHappinessText = viewModel.happinessText
+                        await viewModel.saveEntry(context: modelContext)
+                        showPraiseCard = true
+                    }
+                },
+                onBack: {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        viewModel.previousStep()
+                    }
+                }
+            )
+            .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+        }
+    }
+
+    private var navigationButtons: some View {
+        HStack(spacing: 16) {
+            if viewModel.currentStep == .template {
+                saveButton
+            } else if viewModel.currentStep != .emotion {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        viewModel.previousStep()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                        Text("Back")
+                            .font(.squadaOne(17))
+                    }
+                    .font(.appHeadline)
                     .foregroundStyle(Color.appVermillion)
-
-                Spacer()
-
-                Text("\(viewModel.happinessText.count)/\(maxCharacterCount)")
-                    .font(.caption)
-                    .foregroundStyle(
-                        viewModel.happinessText.count > maxCharacterCount
-                            ? Color.red
-                            : Color.appTextSecondary
-                    )
-            }
-
-            ZStack(alignment: .topLeading) {
-                TextEditor(text: $viewModel.happinessText)
-                    .frame(minHeight: 80)
-                    .scrollContentBackground(.hidden)
-                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
                     .background(Color.appCardBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(Capsule())
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.appVermillionLight.opacity(0.5), lineWidth: 1)
+                        Capsule()
+                            .stroke(Color.appVermillionLight, lineWidth: 1)
                     )
-                    .focused($isTextEditorFocused)
-                    .toolbar {
-                        ToolbarItemGroup(placement: .keyboard) {
-                            Spacer()
-                            Button("完了") {
-                                isTextEditorFocused = false
-                            }
-                            .foregroundStyle(Color.appVermillion)
-                        }
-                    }
-
-                if viewModel.happinessText.isEmpty {
-                    Text("今日あった良かったことを書いてね")
-                        .foregroundStyle(Color.appTextSecondary.opacity(0.6))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 24)
-                        .allowsHitTesting(false)
                 }
             }
-            .onChange(of: viewModel.happinessText) {
-                    if viewModel.happinessText.count > maxCharacterCount {
-                        viewModel.happinessText = String(viewModel.happinessText.prefix(maxCharacterCount))
-                    }
-                }
 
             Button {
-                showQuickPicks = true
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "lightbulb.fill")
-                    Text("思いつかない…？ここから選ぼう")
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.nextStep()
                 }
-                .font(.subheadline)
-                .foregroundStyle(Color.appVermillion)
+            } label: {
+                HStack(spacing: 4) {
+                    Text("Next")
+                        .font(.squadaOne(17))
+                    Image(systemName: "chevron.right")
+                }
+                .font(.appHeadline)
+                .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(Color.appCardBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.appVermillionLight.opacity(0.5), lineWidth: 1)
-                )
+                .padding(.vertical, 14)
+                .background(viewModel.canProceed() ? Color.appVermillion : Color.appVermillionLight)
+                .clipShape(Capsule())
             }
+            .disabled(!viewModel.canProceed())
         }
-        .padding()
-        .background(Color.appCardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.appVermillionLight, lineWidth: 1)
-        )
-        .padding(.horizontal)
-        .sheet(isPresented: $showQuickPicks) {
-            QuickPickSheet { text in
-                viewModel.happinessText = text
-                showQuickPicks = false
-            }
-            .presentationDetents([.medium])
-        }
+        .padding(.horizontal, 60)
     }
 
     private var saveButton: some View {
@@ -207,99 +172,21 @@ struct InputView<ViewModel: InputViewModelProtocol>: View {
             if viewModel.isSaving {
                 ProgressView()
                     .tint(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.appVermillion)
+                    .clipShape(Capsule())
             } else {
-                Text("宝箱に入れる")
-                    .font(.title3)
-                    .fontWeight(.bold)
+                Text("Save")
+                    .font(.squadaOne(17))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.appVermillion)
+                    .clipShape(Capsule())
             }
         }
-        .foregroundStyle(.white)
-        .frame(width: 200, height: 56)
-        .background(Color.appVermillion)
-        .clipShape(Capsule())
-        .shadow(color: Color.appVermillion.opacity(0.3), radius: 8, y: 4)
-        .disabled(viewModel.happinessText.isEmpty || viewModel.isSaving)
-        .opacity(viewModel.happinessText.isEmpty ? 0.6 : 1.0)
-    }
-}
-
-private struct QuickPickSheet: View {
-    let onSelect: (String) -> Void
-    @Environment(\.dismiss) private var dismiss
-    @State private var selected: Set<String> = []
-
-    private let picks = [
-        "ごはんがおいしかった",
-        "ちゃんと起きれた",
-        "よく眠れた",
-        "笑えた瞬間があった",
-        "誰かと話せた",
-        "好きな曲を聴けた",
-        "天気がよかった",
-        "がんばって乗り切った",
-        "推しに癒された",
-        "あったかい飲み物を飲めた",
-        "今日も一日過ごせた",
-        "深呼吸できた",
-    ]
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                ScrollView {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                        ForEach(picks, id: \.self) { pick in
-                            let isSelected = selected.contains(pick)
-                            Button {
-                                if isSelected {
-                                    selected.remove(pick)
-                                } else {
-                                    selected.insert(pick)
-                                }
-                            } label: {
-                                Text(pick)
-                                    .font(.subheadline)
-                                    .foregroundStyle(isSelected ? .white : Color.appTextPrimary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
-                                    .background(isSelected ? Color.appVermillion : Color.appCream)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(isSelected ? Color.appVermillion : Color.appVermillionLight.opacity(0.5), lineWidth: 1)
-                                    )
-                            }
-                        }
-                    }
-                    .padding()
-                }
-
-                Button {
-                    let text = picks.filter { selected.contains($0) }.joined(separator: "／")
-                    onSelect(text)
-                } label: {
-                    Text("決定")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.appVermillion)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .disabled(selected.isEmpty)
-                .opacity(selected.isEmpty ? 0.5 : 1.0)
-                .padding()
-            }
-            .background(Color.appBackground)
-            .navigationTitle("今日できたこと")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") { dismiss() }
-                        .foregroundStyle(Color.appVermillion)
-                }
-            }
-        }
+        .disabled(viewModel.isSaving)
     }
 }
 
